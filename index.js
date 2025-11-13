@@ -165,5 +165,30 @@ app.get('/foods/:id/requests', verifyFirebaseToken, async (req, res) => {
   }
 });
 
+app.patch('/requests/:id', verifyFirebaseToken, async (req, res) => {
+  try {
+    await connectDB();
+    const id = req.params.id;
+    const action = req.body.action; // 'accept' or 'reject'
+    const reqItem = await requests.findOne({ _id: new ObjectId(id) });
+    if (!reqItem) return res.status(404).send({ message: 'request not found' });
+    const foodItem = await foods.findOne({ _id: new ObjectId(reqItem.food_id) });
+    if (!foodItem) return res.status(404).send({ message: 'food not found' });
+    if (foodItem.donator_email !== req.token_email) return res.status(403).send({ message: 'forbidden' });
+
+    if (action === 'accept') {
+      await requests.updateOne({ _id: new ObjectId(id) }, { $set: { status: 'accepted' } });
+      await foods.updateOne({ _id: new ObjectId(foodItem._id) }, { $set: { food_status: 'Donated' } });
+      res.send({ message: 'accepted' });
+    } else if (action === 'reject') {
+      await requests.updateOne({ _id: new ObjectId(id) }, { $set: { status: 'rejected' } });
+      res.send({ message: 'rejected' });
+    } else {
+      res.status(400).send({ message: 'invalid action' });
+    }
+  } catch (err) {
+    res.status(500).send({ message: 'Server Error' });
+  }
+});
 
 module.exports = app;
