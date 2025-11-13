@@ -139,5 +139,31 @@ app.post('/requests', verifyFirebaseToken, async (req, res) => {
   }
 });
 
+app.get('/requests', async (req, res) => {
+  try {
+    await connectDB();
+    const query = {};
+    if (req.query.status) query.status = req.query.status;
+    const result = await requests.find(query).toArray();
+    res.send(result);
+  } catch (err) {
+    res.status(500).send({ message: 'Server Error' });
+  }
+});
+
+app.get('/foods/:id/requests', verifyFirebaseToken, async (req, res) => {
+  try {
+    await connectDB();
+    const foodId = req.params.id;
+    const foodItem = await foods.findOne({ _id: new ObjectId(foodId) });
+    if (!foodItem) return res.status(404).send({ message: 'food not found' });
+    if (foodItem.donator_email !== req.token_email) return res.status(403).send({ message: 'forbidden' });
+    const result = await requests.find({ food_id: foodId }).toArray();
+    res.send(result);
+  } catch (err) {
+    res.status(500).send({ message: 'Server Error' });
+  }
+});
+
 
 module.exports = app;
