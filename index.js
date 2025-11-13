@@ -122,4 +122,22 @@ app.delete('/foods/:id', verifyFirebaseToken, async (req, res) => {
   }
 });
 
+// --- Requests ---
+app.post('/requests', verifyFirebaseToken, async (req, res) => {
+  try {
+    await connectDB();
+    const payload = req.body;
+    payload.requester_email = req.token_email;
+    payload.requester_name = req.token_name;
+    payload.requester_photo = req.token_photo;
+    payload.status = 'pending';
+    payload.created_at = new Date().toISOString();
+    const result = await requests.insertOne(payload);
+    res.send({ insertedId: result.insertedId });
+  } catch (err) {
+    res.status(500).send({ message: 'Server Error' });
+  }
+});
+
+
 module.exports = app;
