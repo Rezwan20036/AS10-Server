@@ -81,5 +81,45 @@ app.get('/foods/:id', async (req, res) => {
     res.status(500).send({ message: 'Server Error' });
   }
 });
+app.post('/foods', verifyFirebaseToken, async (req, res) => {
+  try {
+    await connectDB();
+    const payload = req.body;
+    if (!payload.donator_email) payload.donator_email = req.token_email;
+    const result = await foods.insertOne(payload);
+    res.send({ insertedId: result.insertedId });
+  } catch (err) {
+    res.status(500).send({ message: 'Server Error' });
+  }
+});
+
+app.patch('/foods/:id', verifyFirebaseToken, async (req, res) => {
+  try {
+    await connectDB();
+    const id = req.params.id;
+    const update = req.body;
+    const existing = await foods.findOne({ _id: new ObjectId(id) });
+    if (!existing) return res.status(404).send({ message: 'Not found' });
+    if (existing.donator_email !== req.token_email) return res.status(403).send({ message: 'forbidden' });
+    const result = await foods.updateOne({ _id: new ObjectId(id) }, { $set: update });
+    res.send(result);
+  } catch (err) {
+    res.status(500).send({ message: 'Server Error' });
+  }
+});
+
+app.delete('/foods/:id', verifyFirebaseToken, async (req, res) => {
+  try {
+    await connectDB();
+    const id = req.params.id;
+    const existing = await foods.findOne({ _id: new ObjectId(id) });
+    if (!existing) return res.status(404).send({ message: 'Not found' });
+    if (existing.donator_email !== req.token_email) return res.status(403).send({ message: 'forbidden' });
+    const result = await foods.deleteOne({ _id: new ObjectId(id) });
+    res.send(result);
+  } catch (err) {
+    res.status(500).send({ message: 'Server Error' });
+  }
+});
 
 module.exports = app;
