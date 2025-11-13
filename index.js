@@ -55,5 +55,31 @@ async function verifyFirebaseToken(req, res, next) {
 app.get('/', (req, res) => {
   res.send({ ok: true, message: 'FoodBridge server running' });
 });
+// --- Foods ---
+app.get('/foods', async (req, res) => {
+  try {
+    await connectDB();
+    const query = {};
+    if (req.query.status) query.food_status = req.query.status;
+    const items = await foods.find(query).toArray();
+    res.send(items);
+  } catch (err) {
+    res.status(500).send({ message: 'Server Error' });
+  }
+});
+
+app.get('/foods/:id', async (req, res) => {
+  try {
+    await connectDB();
+    const id = req.params.id;
+    const item = await foods.findOne({ _id: new ObjectId(id) });
+    if (!item) return res.status(404).send({ message: 'Not found' });
+    const foodRequests = await requests.find({ food_id: id }).toArray();
+    item.requests = foodRequests;
+    res.send(item);
+  } catch (err) {
+    res.status(500).send({ message: 'Server Error' });
+  }
+});
 
 module.exports = app;
